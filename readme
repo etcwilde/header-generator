@@ -1,0 +1,3 @@
+This program provides a fast and easy method to create syntactically correct license headers to c, c++, and java files.
+
+It reads user information from a config file
