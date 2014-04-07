@@ -1,3 +1,94 @@
-This program provides a fast and easy method to create syntactically correct license headers to c, c++, and java files.
+Program Header Generator
 
-It reads user information from a config file
+Author: Evan Wilde 				<etcwilde@uvic.ca>
+Start Date: April 6 2014
+Version: 0.1
+
+This program will apply user templates to create uniform header documentation 
+for each source file specified.
+It uses the file extension to map to a given template file, 
+so it can support any language.
+
+
+Template Keyword Definitions:
+
+TYPE
+	Defines the type of file that this template header applies to. 
+	This is case sensitive, so "C" and "c" are different file types.
+
+---START
+	Defines the start of the template that will be written to the source file.
+
+---END
+	Defines the end of the template that will be written to the source file.
+
+<FILE>
+	The name of the file with the file extensions.
+
+<FILEPATH>
+	The full file path to the file, with file extensions.
+
+<FILENAME>
+	The name of the file without file extensions.
+
+<USERNAME>
+	The name of the user who created the file.
+
+<EMAIL>
+	The email of the user who created the file.
+
+<DATE>
+	The date the file was modified. 
+	If the file has never been modified, this is the creation date.
+
+<INC>
+	Where the include statements will be placed, relative to the header
+
+INCTYPE
+	How external libraries are included in a source file.
+	e.g. for java it is "INCTYPE:import"
+
+
+
+=== [Examples] ===============================================================
+------------------------------------------------------------------------------
+This example is for a simple java header and only applies to ".java" files.
+------------------------------------------------------------------------------
+
+AUTH:Evan Wilde
+DATE:April 6 2014
+TYPE:java
+INCTYPE:import
+
+---START
+/* <FILENAME>
+ * File: <FILE>
+ * Auth: <USERNAME> <EMAIL>
+ * Date: <DATE>
+ */
+---END
+<INC>
+
+------------------------------------------------------------------------------
+This example template is for ".c", ".cpp", ".C", and ".h" files.
+------------------------------------------------------------------------------
+
+AUTH:Evan Wilde
+DATE:April 6 2014
+INCTYPE:#include
+TYPE:c
+TYPE:cpp
+TYPE:C
+TYPE:h
+
+<INC>
+---START
+/**
+ * <FILE>
+ * File: <FILENAME>
+ * Auth: <USERNAME> <EMAIL>
+ * Date: <DATE>
+ */
+---END
+
+------------------------------------------------------------------------------

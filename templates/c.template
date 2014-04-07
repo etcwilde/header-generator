@@ -1,10 +1,15 @@
 AUTH:Evan Wilde
 DATE:April 6 2014
+INCTYPE:#include
 TYPE:c
+TYPE:cpp
+TYPE:C
+TYPE:h
 
----START
 <INC>
-/* <FILE>
+---START
+/**
+ * <FILE>
  * File: <FILENAME>
  * Auth: <USERNAME> <EMAIL>
  * Date: <DATE>

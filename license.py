@@ -5,10 +5,12 @@
 #
 # license.py
 # Written by Evan Wilde
+# April 6 2014
 # 
 # This program will place license agreement information at the top of source code files
 # It reads your information from a config file, or requests your information to generate
 # the config file
+#
 #######################################################################################
 
 import argparse
@@ -17,17 +19,14 @@ import os
 import re
 import sys
 import time
-
+import multiprocessing
+import math
 
 # String pattern
 input_pattern = "Username:(.*)email:(.*)"
 input_pattern = re.compile(input_pattern)
 email_pattern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 email_pattern = re.compile(email_pattern)
-
-
-
-
 
 #	Colors
 class terminal_colors:
@@ -39,15 +38,13 @@ class terminal_colors:
 	FAIL = '\033[91m'
 	END = '\033[0m'
 
-class header:
-	username = ""
-	useremail = ""
+def filechunks (files, threads):
+	return [files[i:i+math.ceil(len(files)/threads)] for i in range(0, len(files), math.ceil(len(files)/threads))]  
 
-	filename = ""
-	filecreatetime = None
-
-	def generate_header(self, pattern):
-		pass
+def chunks (l, n):
+	if n < 1:
+		n = 1
+	return [l[i:i+n] for i in range (0, len(l), n)]
 
 def main():
 	args = argparse.ArgumentParser(description = "Add headers to source files.")
@@ -111,10 +108,8 @@ def main():
 
 		config_file.close()
 		if (rewrite_flag):
-			print ("Rewriting file:", replace_string)
-			config_file = open("./.license.config", mode = 'r')
+			config_file = open("./.license.config", mode = 'w')
 			config_file.write(replace_string)
-			# Will, we need to re-write the changes to the config file
 
 	except Exception:
 		config_file = open("./.license.config", mode = 'w')
@@ -143,8 +138,15 @@ def main():
 	if (username and not email):
 		print(terminal_colors.FAIL + "Email not provided" + terminal_colors.END)
 		exit()
+	
 	print ("User:", username, "\t\t<" + email + ">")
-	print (args['files'])
+
+	max_threads = multiprocessing.cpu_count()
+
+	file_list = filechunks(args['files'], max_threads)
+	print(file_list)
+	print("Chunks: {0}, Chunk Size: {2} files: {1}".format(len(file_list), len(args['files']), len(file_list[0])) )
+
 
 if __name__ == '__main__':
 	main()

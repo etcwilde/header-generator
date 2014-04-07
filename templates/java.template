@@ -1,12 +1,13 @@
 AUTH:Evan Wilde
 DATE:April 6 2014
 TYPE:java
+INCTYPE:import
 
 ---START
-/* <FILE>
- * File: <FILENAME>
+/* <FILENAME>
+ * File: <FILE>
  * Auth: <USERNAME> <EMAIL>
  * Date: <DATE>
  */
-<INC>
 ---END
+<INC>
