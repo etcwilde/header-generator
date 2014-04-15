@@ -7,54 +7,57 @@
 #
 # Contains the heading information class
 #######################################################################################
-
-import re
-import os
-import time
-
-file_name_pattern = "/([a-zA-Z0-9_-]*)\.([a-zA-Z0-9]*)$"
-file_name_pattern = re.compile(file_name_pattern)
+import files
 
 class header:
-	"""Heading Data"""
+	"""Heading Data Container"""
 	username = ""
 	email = ""
-
-	filepath = ""
-	filecreatetime = None
-
+	file_data = None
+	
 	def __init__(self, username, email, filepath):
+		"""Create a new header object"""
 		self.username = username
 		self.email = email
-		self.filepath = filepath
-		filecreatetime = time.ctime(os.path.getctime(filepath))
+
+		self.file_data = files.fileProperty(filepath)
 
 	def set_username(self, name):
+		"""Sets the name that will be applied to the source headers -- Might be deprecated soon"""
 		self.username = name
 
 	def get_username(self):
+		"""Returns the name that will be applied to the source headers"""
 		return self.username
 
 	def set_email(self, email):
+		"""Sets an email for a user --- Might become deprecated soon"""
 		self.email = email
 
 	def get_email(self):
+		"""Returns the email of the current user"""
 		return self.email
 
-	def set_filedata(self, filepath):
-		self.filepath = filepath
-
 	def get_filepath(self):
-		return self.filepath
+		"""Returns the absolute filepath"""
+		return self.file_data.get_filepath()
 
 	def get_filename(self):
-		(filename, file_extension) = file_name_pattern.match(self.filepath).groups()
-		return filename
+		"""Returns the filename without extension or path"""
+		return self.file_data.get_filename()
 
 	def get_file(self):
-		(filename, file_extension) = file_name_pattern.match(self.filepath).groups()
-		return filename + "." + file_extension
+		"""Returns the filename and extension"""
+		return self.file_data.get_file()
 
 	def get_extension(self):
-		(filename, file_extension) = file_name_pattern.match(self.filepath).groups()
-		return file_extension
+		"""Returns the extension of the file"""
+		return self.file_data.get_extension()
+
+	def get_create_time(self):
+		"""Returns the last modified time"""
+		return self.file_data.get_ctime()
+	
+	def __repr__(self):
+		"""A pretty representation of the header data"""
+		return "{0} <{1}>\nFilename: {2} -- {4}\nExtension: {3}".format(self.username, self.email, self.get_filename(), self.get_extension(), self.get_create_time())

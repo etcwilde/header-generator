@@ -1,14 +1,28 @@
-Program Header Generator
+Source Code Header Generator
 
 Author: Evan Wilde 				<etcwilde@uvic.ca>
 Start Date: April 6 2014
 Version: 0.1
+
+=== Description ===
 
 This program will apply user templates to create uniform header documentation 
 for each source file specified.
 It uses the file extension to map to a given template file, 
 so it can support any language.
 
+=== Program Usage ===
+
+usage: license.py [-h] [-u USERNAME] [-e EMAIL] [-v] [--version] files [files ...]
+	-h: Help
+	-u: Specify a username for the copyright. This will require an email be passed as well.
+	-e: Specify an email address for the user
+	-v, --verbose: Outputs verbosely
+	--version: prints the version of the program
+
+	files: The list of files that need to have a header appended to them.
+
+=== Template Keywords ===
 
 Template Keyword Definitions:
 
@@ -49,10 +63,9 @@ INCTYPE
 	e.g. for java it is "INCTYPE:import"
 
 
-
-=== [Examples] ===============================================================
+=== Template samples ===
 ------------------------------------------------------------------------------
-This example is for a simple java header and only applies to ".java" files.
+This example template is for "java" files.
 ------------------------------------------------------------------------------
 
 AUTH:Evan Wilde

@@ -22,6 +22,9 @@ import time
 import multiprocessing
 import math
 
+import header
+import template_manager
+
 # String pattern
 input_pattern = "Username:(.*)email:(.*)"
 input_pattern = re.compile(input_pattern)
@@ -56,6 +59,9 @@ def main():
 	args = vars(args.parse_args())
 	username = ""
 	email = ""
+
+	# Should load this in either from the config file or from the args
+	templates = template_manager.template_manager("./templates")
 
 	# If there isn't a configuration file, try scraping it off the arguments
 	try:
@@ -110,7 +116,6 @@ def main():
 		if (rewrite_flag):
 			config_file = open("./.license.config", mode = 'w')
 			config_file.write(replace_string)
-
 	except Exception:
 		config_file = open("./.license.config", mode = 'w')
 		if (not args['username']):
@@ -128,7 +133,7 @@ def main():
 			email = args['email']
 			if (email_pattern.match(email)):
 					valid = True
-			while (not valid):
+			while not valid:
 				email = input("Your Email:")
 				if (email_pattern.match(email)):
 					valid = True
@@ -138,14 +143,30 @@ def main():
 	if (username and not email):
 		print(terminal_colors.FAIL + "Email not provided" + terminal_colors.END)
 		exit()
-	
 	print ("User:", username, "\t\t<" + email + ">")
 
-	max_threads = multiprocessing.cpu_count()
+	# Disabled until threading figured out
+	#max_threads = multiprocessing.cpu_count()
+	#file_list = filechunks(args['files'], max_threads)
 
-	file_list = filechunks(args['files'], max_threads)
-	print(file_list)
-	print("Chunks: {0}, Chunk Size: {2} files: {1}".format(len(file_list), len(args['files']), len(file_list[0])) )
+	file_list = list(set(args['files'])) #The list of non-duplicate files
+	for src_file in file_list:
+		heading = header.header(username, email, src_file)
+		print(str(heading.get_file()))
+		print(heading)
+		print("Associated Template:" + str(templates.search_templates(heading.get_extension())))
+		# for each file we need to process, we need to get some information
+		# print (src_file)
+
+
+
+
+
+
+
+
+	#print(file_list)
+	#print("Chunks: {0}, Chunk Size: {2} files: {1}".format(len(file_list), len(args['files']), len(file_list[0])) )
 
 
 if __name__ == '__main__':
