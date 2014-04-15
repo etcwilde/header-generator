@@ -76,22 +76,108 @@ def list_dir_visible(path):
 #			exit()
 #
 
+class template:
+	#Do I actually want this to be a file? I don't think so.
+	#It should contain a file, but not be one necessarily.
+	"""Contains the metadata for a template file"""
+	template_file = None
+	include_pattern = ""
+	type_associations = []
+	def __init__(self, template_filename):
+		"""Initializes a template file"""
+		self.template_file = files.fileProperty(template_filename)
+		for line in self.template_file:
+			print (line)
+
+	def update_associations(self):
+		"""Unimplemented
+		Updates the metadata headers for the template
+		"""
+		pass
+
+	def get_associations(self):
+		"""Returns the list of associated file types"""
+		return type_associations
+
+
+
 
 # Template Manager
 #
 # Maintains the database of all the templates
-class template_manager(object):
+class template_manager:
 	"""Template manager maintains a database of the installed templates and associated file extensions."""
-	filetype_registry = {}
-	registered_templates = []
-	template_location = ""
 
-	registry_updated = False
+	__filetype_registry = {}
+	__registered_templates = []
+	__template_location = ""
+	__registry_updated = False
+
+	def create_registry_file(self):
+		"""Unimplemented
+		Creates a new template registry database
+		"""
+		pass
+
+	def update_registry_file(self):
+		"""Unimplemented
+		Updates the template registry database
+		Inserts new registry templates
+		Removes deleted registry templates
+		Updates modified registry templates
+		"""
+		pass
+
+	def load_registry_file(self):
+		"""Unimplemented
+		Loads the contents of the registry into the class members
+		"""
+		pass
+
+	def get_new_templates(self):
+		"""Unimplemented
+		Returns a list of unique templates that have been put in the template file
+		but not registered with the database.
+		"""
+		pass
+
+	def get_removed_templates(self):
+		"""Unimplemented
+		Returns a list of unique templates that have been removed from the template file
+		but not removed from the database
+		"""
+		pass
+
+	def get_modified_templates(self):
+		"""Unimplemented
+		Returns a list of unique templates that have been modified, since their last update in the registry
+		"""
+		pass
+
+	def add_new_templates(self):
+		"""Unimplemented
+		Registers all new templates with the registry
+		"""
+		pass
+
+	def remove_deleted_templates(self):
+		"""Unimplemented
+		Removes deleted registered templates from the registry
+		"""
+		pass
+
+	def update_modified_templates(self):
+		"""Unimplemented
+		Updates modified templates in the registry
+		"""
+		pass
 
 
 	def __init__(self, template_location):
+		"""Initializses the template manager and database"""
+		# This method desperately needs to be refactored
 		registry_location = template_location + "/.file_types.db"
-		self.template_location = template_location
+		self.__template_location = template_location
 
 		# Does the registry exist?
 		contains_registry = ".file_types.db" in os.listdir(template_location)
@@ -110,43 +196,44 @@ class template_manager(object):
 						file_ext = Template_Type_pattern.match(line)
 						if file_ext:
 							file_ext = file_ext.groups()[0]
-							self.filetype_registry[file_ext] = fobj
+							self.__filetype_registry[file_ext] = fobj
 						elif "--START" in line:
 							break
-					self.registered_templates.append(fobj)
+					self.__registered_templates.append(fobj)
 					f.close()
 				except FileNotFoundError:
 					print ("Could not find file: %s" % template_location +"/"+ template_file)
 			lst = []
-			lst.append(self.registered_templates)
-			lst.append(self.filetype_registry)
+			lst.append(self.__registered_templates)
+			lst.append(self.__filetype_registry)
 			registry_file = open(registry_location, "wb")
 			pickle.dump(lst, registry_file)
 			registry_file.close()
-			print ("Registered Templates:" + str(self.registered_templates))
-			print ("File Types:" + str(self.filetype_registry))
+			print ("Registered Templates:" + str(self.__registered_templates))
+			print ("File Types:" + str(self.__filetype_registry))
 		else:
 			# We shouldn't necessarily need to update the registry,
 			# Only if the user requests an unregistered file type
 			registry_contents = pickle.load(open(registry_location, "rb"))
-			self.registered_templates = registry_contents[0]
-			self.filetype_registry = registry_contents[1]
-			print ("Registered Templates:" + str(self.registered_templates))
-			print ("File Types:" + str(self.filetype_registry))
+			self.__registered_templates = registry_contents[0]
+			self.__filetype_registry = registry_contents[1]
+			print ("Registered Templates:" + str(self.__registered_templates))
+			print ("File Types:" + str(self.__filetype_registry))
 
 	def update_registry(self):
 		"""Updates the filetype registry to contains new templates"""
-		registry_location = self.template_location + "/.file_types.db"
-		contains_registry = ".file_types.db" in os.listdir(self.template_location)
+		# This method desperately needs to be refactored
+		registry_location = self.__template_location + "/.file_types.db"
+		contains_registry = ".file_types.db" in os.listdir(self.__template_location)
 		if not contains_registry: 
 			contains_registry = ".file_types.db" in os.listdir(".")
 
 		# Check for new files
 		registry_contents = pickle.load(open(registry_location, "rb"))
 		directory_files = []
-		dir_files = list_dir_visible(self.template_location)
+		dir_files = list_dir_visible(self.__template_location)
 		for filename in dir_files:
-			directory_files.append(files.fileProperty(self.template_location + "/" + filename))
+			directory_files.append(files.fileProperty(self.__template_location + "/" + filename))
 		registry_files = registry_contents[0]
 		registry_types = registry_contents[1]
 
@@ -174,22 +261,22 @@ class template_manager(object):
 					if file_ext:
 						# Register the file extensions
 						file_ext = file_ext.groups()[0]
-						self.filetype_registry[file_ext] = fname
+						self.__filetype_registry[file_ext] = fname
 
 					elif "--START" in line:
 						break
 			# Regsiter the template file
 			else:
 				print("File Deleted or Incorrect Permissions")
-			self.registered_templates.append(fname)
+			self.__registered_templates.append(fname)
 
-		print("\tTemplates:\t",self.registered_templates)
-		print("\tAssociation:\t", self.filetype_registry)
+		print("\tTemplates:\t",self.__registered_templates)
+		print("\tAssociation:\t", self.__filetype_registry)
 		print("Removing Deleted Files!")
 		for fname in removed_files:
 			print (fname)
-		print("\tTemplates:\t",self.registered_templates)
-		print("\tAssociation:\t", self.filetype_registry)
+		print("\tTemplates:\t",self.__registered_templates)
+		print("\tAssociation:\t", self.__filetype_registry)
 
 
 
@@ -202,19 +289,21 @@ class template_manager(object):
 		# 	the database at the initial run is better? That way we don't have to worry about going
 		# 	out for each file that we run across (say if none of the files are of a registered type, 
 		#	nor want the to be text files, compiled files, etc....)
+
 		try:
-			return self.filetype_registry[file_extension]
+			return self.__filetype_registry[file_extension]
 		except KeyError:
 			# Hacky way of ensuring we only update once...
-			if not self.registry_updated:
+			if not self.__registry_updated:
 				self.update_registry()
-				self.registry_updated = True
+				self.__registry_updated = True
 			else:
+				print ("No registered file for: {0}".format(file_extension))
 				return None
 			try:
-				return self.filetype_registry[file_extension]
+				return self.__filetype_registry[file_extension]
 			except KeyError:
-				print ("No registered file for:{0}".format(file_extension))
+				print ("No registered file for: {0}".format(file_extension))
 				return None
 
 

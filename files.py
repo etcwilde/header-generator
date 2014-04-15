@@ -16,16 +16,16 @@ import time
 #
 # An object capable of returning contents of a file
 # 
-class fileProperty(object):
+class fileProperty:
 	"""docstring for fileProperty"""
-	filepath = ""
-	filecreatetime = None
-	file_name_pattern = re.compile("^.*/(.*)\.(.*)$")
+	__filepath = ""
+	__filecreatetime = None
+	__file_name_pattern = re.compile("^.*/(.*)\.(.*)$")
 
 	def __init__(self, filepath):
 		"""Creates a new file property"""
-		self.filepath = os.path.abspath(filepath)
-		self.filecreatetime = time.ctime(os.path.getctime(filepath))
+		self.__filepath = os.path.abspath(filepath)
+		self.__filecreatetime = time.ctime(os.path.getctime(filepath))
 
 	def __eq__(self, other):
 		"""Determines if two files are the same"""
@@ -33,23 +33,35 @@ class fileProperty(object):
 
 	def __hash__(self):
 		"""Hashing function for fileproperties
-			This is the result of the python string hash function on the filepath"""
-		return hash(self.filepath)
+		This is the result of the python string hash function on the filepath"""
+		return hash(self.__filepath)
+
+	def __iter__(self):
+		"""Iterates through each line of the file"""
+		f = self.open()
+		if f:
+			for line in f:
+				yield str.strip(line)
+			f.close()
+		else:
+			return ""
 
 
 	def open(self, mode = 'r', buffering = -1, encoding = None, errors = None, newline = None, closefd = True, opener = None):
 		"""Returns an opened file"""
 		try:
-			return open(self.filepath, mode, buffering, encoding, errors, newline, closefd, opener)
+			return open(self.__filepath, mode, buffering, encoding, errors, newline, closefd, opener)
 		except Exception:
-			print ("Could not open file: %s" % self.filepath)
+			print ("Could not open file: %s" % self.__filepath)
 			return None
 
 	def get_lines(self):
+		"""returns all the lines in the file"""
 		f = self.open()
 		if f:
 			for line in f:
-				yield line
+
+				yield str.strip(line)
 			f.close()
 		else:
 			return ""
@@ -57,17 +69,17 @@ class fileProperty(object):
 
 	def get_filepath(self):
 		"""Returns the absolute filepath"""
-		return self.filepath
+		return self.__filepath
 
 	def get_filename(self):
 		"""Returns the filename without extension or path"""
-		(filename, _) = self.file_name_pattern.match(self.filepath).groups()
+		(filename, _) = self.__file_name_pattern.match(self.__filepath).groups()
 		return filename
 
 	def get_file(self):
 		"""Returns the filename and extension"""
 		try:
-			(filename, file_extension) = self.file_name_pattern.match(self.filepath).groups()
+			(filename, file_extension) = self.__file_name_pattern.match(self.__filepath).groups()
 		except AttributeError:
 			print ("No file extension!")
 
@@ -77,25 +89,25 @@ class fileProperty(object):
 	def get_extension(self):
 		"""Returns the extension of the file"""
 		try:
-			(_, file_extension) = self.file_name_pattern.match(self.filepath).groups()
+			(_, file_extension) = self.__file_name_pattern.match(self.__filepath).groups()
 		except AttributeError:
 			print ("No file extension")
 		return file_extension
 
 	def get_ctime(self):
 		"""Returns last modified time of a file"""
-		return self.filecreatetime
+		return self.__filecreatetime
 
 	def set_file_pattern(self, pattern):
-		"""Sets the file search pattern for, allowing for different file patterns
-		If the pattern is unable to compile, it will revert to the previous pattern"""
-		old_pattern = self.file_name_pattern
+		"""Sets the file search pattern for, allowing for different file patterns.
+		If the pattern is unable to compile, it will revert to the previous pattern."""
+		old_pattern = self.__file_name_pattern
 		try:
 			new_pattern = re.compile(pattern)
 		except Exception:
 			print ("Error: Pattern Could Not Be Compiled")
 			new_pattern = old_pattern
-		self.file_name_pattern = new_pattern
+		self.__file_name_pattern = new_pattern
 
 	def __str__(self):
 		"""String representation of the file data"""
