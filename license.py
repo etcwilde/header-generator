@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 
+"""@package docstring
+Documentation for Header Generator
+"""
+
 #######################################################################################
 # license
 #
@@ -31,15 +35,14 @@ input_pattern = re.compile(input_pattern)
 email_pattern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 email_pattern = re.compile(email_pattern)
 
-#	Colors
-class terminal_colors:
-	''' Terminal color output definitions '''
-	HEADER = '\033[95m'
-	BLUE = '\033[34m'
-	GREEN = '\033[92m'
-	DEBUG = '\033[93m'
-	FAIL = '\033[91m'
-	END = '\033[0m'
+
+HEADER = '\033[95m'
+BLUE = '\033[34m'
+GREEN = '\033[92m'
+DEBUG = '\033[93m'
+FAIL = '\033[91m'
+END = '\033[0m'
+	
 
 def filechunks (files, threads):
 	return [files[i:i+math.ceil(len(files)/threads)] for i in range(0, len(files), math.ceil(len(files)/threads))]  
@@ -141,7 +144,7 @@ def main():
 		config_file.write(user_data)
 
 	if (username and not email):
-		print(terminal_colors.FAIL + "Email not provided" + terminal_colors.END)
+		print(FAIL + "Email not provided" + END)
 		exit()
 	print ("User:", username, "\t\t<" + email + ">")
 
@@ -155,6 +158,9 @@ def main():
 		print(str(heading.get_file()))
 		print(heading)
 		print("Associated Template:" + str(templates.search_templates(heading.get_extension())))
+		if templates.search_templates(heading.get_extension()):
+			template_file = template_manager.template(templates.search_templates(heading.get_extension()).get_filepath())
+
 		# for each file we need to process, we need to get some information
 		# print (src_file)
 
