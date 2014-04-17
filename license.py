@@ -64,7 +64,7 @@ def main():
 	email = ""
 
 	# Should load this in either from the config file or from the args
-	templates = template_manager.template_manager("./templates")
+	templates = template_manager.Template_manager("./templates")
 
 	# If there isn't a configuration file, try scraping it off the arguments
 	try:
@@ -157,9 +157,13 @@ def main():
 		heading = header.header(username, email, src_file)
 		print(str(heading.get_file()))
 		print(heading)
-		print("Associated Template:" + str(templates.search_templates(heading.get_extension())))
-		if templates.search_templates(heading.get_extension()):
-			template_file = template_manager.template(templates.search_templates(heading.get_extension()).get_filepath())
+		print("Associated Template: " + str(templates.search_templates(heading.get_extension())))
+#		if templates.search_templates(heading.get_extension()):
+#			
+#
+#
+#			template_file = template_manager.Template(templates.search_templates(heading.get_extension()).get_filepath())
+			
 
 		# for each file we need to process, we need to get some information
 		# print (src_file)

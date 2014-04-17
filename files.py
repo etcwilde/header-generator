@@ -18,17 +18,22 @@ import time
 # 
 class fileProperty:
 	"""docstring for fileProperty"""
-	__filepath = ""
-	__filecreatetime = None
+
 	__file_name_pattern = re.compile("^.*/(.*)\.(.*)$")
 
 	def __init__(self, filepath):
 		"""Creates a new file property"""
+		self.__filepath = ""
+		self.__filecreatetime = None
+
 		self.__filepath = os.path.abspath(filepath)
 		self.__filecreatetime = time.ctime(os.path.getctime(filepath))
 
 	def __eq__(self, other):
-		"""Determines if two files are the same"""
+		"""
+		Determines if two files are the same
+		Files are equal if the absolute filepath is the same.
+		"""
 		return self.get_filepath() == other.get_filepath()
 
 	def __hash__(self):
@@ -45,6 +50,15 @@ class fileProperty:
 			f.close()
 		else:
 			return ""
+
+	def exists(self):
+		"""Returns if the file exists and is accessible"""
+		try:
+			f = open(self.__filepath)
+			f.close()
+			return True
+		except FileNotFoundError:
+			return False
 
 
 	def open(self, mode = 'r', buffering = -1, encoding = None, errors = None, newline = None, closefd = True, opener = None):
