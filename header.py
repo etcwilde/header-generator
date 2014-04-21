@@ -24,7 +24,7 @@ class header:
 
 	def get_username(self):
 		"""Returns the name that will be applied to the source headers"""
-		return __self.username
+		return self.__username
 
 	def get_email(self):
 		"""Returns the email of the current user"""

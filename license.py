@@ -21,6 +21,8 @@ import argparse
 import fileinput
 import os
 import re
+import random
+import string
 import sys
 import time
 import multiprocessing
@@ -28,6 +30,7 @@ import math
 
 import header
 import template_manager
+
 
 # String pattern
 input_pattern = "Username:(.*)email:(.*)"
@@ -42,11 +45,17 @@ GREEN = '\033[92m'
 DEBUG = '\033[93m'
 FAIL = '\033[91m'
 END = '\033[0m'
-	
 
+# For generating tmp file names
+def random_name_generator(size = 4, chars = string.ascii_uppercase + string.digits):
+	return ''.join(random.choice(chars) for _ in range(size))
+
+# For breaking the incoming list of threads into separate lists for multi-threading.
 def filechunks (files, threads):
 	return [files[i:i+math.ceil(len(files)/threads)] for i in range(0, len(files), math.ceil(len(files)/threads))]  
 
+# Chuncking thing....
+# I don't think this is necessary anymore.
 def chunks (l, n):
 	if n < 1:
 		n = 1
@@ -60,6 +69,7 @@ def main():
 	args.add_argument('-v', '--verbose',action = "store_true", help = "Outputs verbosely.")
 	args.add_argument('--version', action = "version", version = "%(prog)s 0.1")
 	args = vars(args.parse_args())
+	
 	username = ""
 	email = ""
 
@@ -146,34 +156,49 @@ def main():
 	if (username and not email):
 		print(FAIL + "Email not provided" + END)
 		exit()
-	print ("User:", username, "\t\t<" + email + ">")
+	#print ("User:", username, "\t\t<" + email + ">")
 
-	# Disabled until threading figured out
-	#max_threads = multiprocessing.cpu_count()
-	#file_list = filechunks(args['files'], max_threads)
+
 
 	file_list = list(set(args['files'])) #The list of non-duplicate files
 	for src_file in file_list:
 		heading = header.header(username, email, src_file)
-		print(str(heading.get_file()))
-		print(heading)
-		print("Associated Template: " + str(templates.search_templates(heading.get_extension())))
-#		if templates.search_templates(heading.get_extension()):
-#			
-#
-#
-#			template_file = template_manager.Template(templates.search_templates(heading.get_extension()).get_filepath())
-			
+		template = templates.search_templates(heading.get_extension())
+		head = template.generate_header(heading)
+		
+		filename = src_file
 
-		# for each file we need to process, we need to get some information
-		# print (src_file)
+		# Make the backup hidden
+		tmp_name = "."
+		tmp_name += random_name_generator()
+		tmp_name += ".bak"
+
+		template_include = template.get_include()
+
+		header_written = False
+		with open(src_file, 'r') as s:
+			with open(tmp_name, 'w') as d:
+				if not template.is_include_top():
+					d.write(head)
+					header_written = True
+					for line in s:
+						d.write(line)
+				else:
+					for line in s:
+						if template_include in line or line is string.whitespace:
+							pass
+						elif not header_written:
+							d.write(head)
+							header_written = True
+						d.write(line)
+
+		#Put the file back where it goes
+		os.rename(tmp_name, src_file)
 
 
-
-
-
-
-
+	# Disabled until threading figured out
+	#max_threads = multiprocessing.cpu_count()
+	#file_list = filechunks(args['files'], max_threads)
 
 	#print(file_list)
 	#print("Chunks: {0}, Chunk Size: {2} files: {1}".format(len(file_list), len(args['files']), len(file_list[0])) )

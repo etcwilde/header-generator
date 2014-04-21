@@ -27,7 +27,7 @@ class fileProperty:
 		self.__filecreatetime = None
 
 		self.__filepath = os.path.abspath(filepath)
-		self.__filecreatetime = time.ctime(os.path.getctime(filepath))
+		self.__filecreatetime = time.strftime("%b %d %Y", time.gmtime(os.path.getctime(filepath)))
 
 	def __eq__(self, other):
 		"""
@@ -96,8 +96,6 @@ class fileProperty:
 			(filename, file_extension) = self.__file_name_pattern.match(self.__filepath).groups()
 		except AttributeError:
 			print ("No file extension!")
-
-
 		return filename + "." + file_extension
 
 	def get_extension(self):

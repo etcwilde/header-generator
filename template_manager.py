@@ -8,6 +8,7 @@
 # Manges installed license templates and imports new ones. 
 #######################################################################################
 import files
+import header
 import os
 import pickle
 import re
@@ -48,40 +49,19 @@ class Template:
 
 	def __init__(self, template_filename):
 		"""Initializes a template file"""
-		self.template_file = None
 		self.include_pattern = ""
 		self.type_associations = []
 		self.template_file = files.fileProperty(template_filename)
 
-		line_number = 0
-		for line in self.template_file:
-			line_number += 1
-			if Template_Start_pattern in line:
-				break
-			if Template_End_pattern in line:
-				print ("Syntax Error: File {0}, No template beginning".format(self.template_file.get_filepath()))
+		self.template_string = ""
 
-			# Parser parts
-			if "INCTYPE" in line:
-				try:
-					(self.include_pattern,) = Template_Include_pattern.match(line).groups()
-					print
-				except AttributeError:
-					print ("error doing a thing")
-
-			if "TYPE" in line:
-				try:
-					(type_assoc,) = Template_Type_pattern.match(line).groups()
-					self.type_associations.append(type_assoc)
-
-				except AttributeError:
-					pass
-					#print ("Syntax Error: File {0}, Undefined file association: {1}".format(self.template_file.get_filepath(), line_number))
+		self.include_pos = False # if include position is false, include statements come after the header
+		self.parse_template_file()
 
 	def  __eq__(self, other):
 		"""
 		Template equality is defined by the file path
-		TODO: Include file association in equality
+		TODO: Include file association in equality -- Maybe
 		"""
 		return self.get_file() == other.get_file()
 
@@ -94,17 +74,73 @@ class Template:
 		return hash(self.get_file())
 
 	def __repr__(self):
+		"""
+		Human readable representation of a template
+		"""
 		return_string = self.template_file.get_file()
-	#	if len(self.type_associations) > 0:
-	#		return_string += ": "
-	#		return_string += self.type_associations[0]
-	#		for assoc in self.type_associations[1:]:
-	#			return_string += ", " + assoc
+		#	if len(self.type_associations) > 0:
+		#		return_string += ": "
+		#		return_string += self.type_associations[0]
+		#		for assoc in self.type_associations[1:]:
+		#			return_string += ", " + assoc
 		return return_string
+
+	def __iter__(self):
+		"""
+		Iterates through the lines of the template file
+		"""
+		for line in self.template_file:
+			yield line
+
+	def parse_template_file(self):
+		"""
+		Reads the contents of the template file and fills members of the class
+		"""
+		intemplate = False
+		done_template = False
+		
+		line_number = 0
+		for line in self.template_file:
+			line_number += 1
+			
+			if "--START" in line:
+				intemplate = True
+			elif "--END" in line and intemplate:
+				intemplate = False
+				done_template = True
+			elif "--END" in line and not intemplate:
+				print ("Syntax Error: {0}:{1} -- In Template".format(self.template_file, line_number))
+			elif "<INC>" in line and not done_template:
+				self.include_pos = True
+			elif "INCTYPE" in line:
+				try:
+					(self.include_pattern,) = Template_Include_pattern.match(line).groups()
+				except AttributeError:
+					print ("Syntax Error: {0}:{1} -- Include Type".format(self.template_file, line_number))
+			elif "TYPE" in line:
+				try:
+					(type_assoc,) = Template_Type_pattern.match(line).groups()
+					self.type_associations.append(type_assoc)
+				except AttributeError:
+					pass
+
+	def is_include_top(self):
+		"""
+		Returns true if include statements are before header
+		"""
+		return self.include_pos
+
+	def get_include(self):
+		"""
+		Returns the include pattern
+		i.e #include for c, import for python, etc...
+		"""
+		return self.include_pattern
 
 	def update_associations(self):
 		"""Unimplemented
 		Updates the metadata headers for the template
+		-- Deprecated, just use parse_template_file
 		"""
 		pass
 
@@ -117,6 +153,33 @@ class Template:
 	def get_file(self):
 		"""Returns the fileProperty of the Template"""
 		return self.template_file
+
+	def generate_header(self, header):
+		"""
+		Returns a string form of the header with all the lables filled out
+		"""
+		out_string = ""
+		intemplate = False
+		for line in self:
+			if "--END" in line:
+				intemplate = False
+			elif intemplate:
+				if "<FILE>" in line:
+					line = line.replace("<FILE>", header.get_filename())
+				if "<FILEPATH>" in line:
+					line = line.replace("<FILEPATH>", header.get_filepath())
+				if "<FILENAME>" in line:
+					line = line.replace("<FILENAME>", header.get_file())
+				if "<USERNAME>" in line:
+					line = line.replace("<USERNAME>", header.get_username())
+				if "<EMAIL>" in line:
+					line = line.replace("<EMAIL>", header.get_email())
+				if "<DATE>" in line:
+					line = line.replace("<DATE>", header.get_create_time())
+				out_string += line + "\n"
+			elif "--START" in line:
+				intemplate = True
+		return out_string
 
 
 
@@ -157,18 +220,6 @@ class Template_manager:
 				if file_ext:
 					(file_ext,) = file_ext.groups()
 					self.__filetype_registry[file_ext] = t
-		#try:
-		#	f = files.fileProperty(self.__template_location + "/" + template_filename)
-		#	for line in f:
-		#		file_ext = Template_Type_pattern.match(line)
-		#		if file_ext:
-		#			file_ext = file_ext.groups()
-		#			self.__filetype_registry[file_ext] = f
-		#		elif "--START" in line:
-		#			break
-		#	self.__registered_templates.append(Template(template_filename))
-		#except FileNotFoundError:
-		#	print ("Could not find file: %s" % self.__template_location +"/"+ template_filename)
 
 	def get_new_templates(self):
 		"""
@@ -296,6 +347,4 @@ class Template_manager:
 		registry_file = open(registry_location, "wb")
 		pickle.dump(lst, registry_file)
 		registry_file.close()
-		#print(self.__registered_templates)
-		#print(self.__filetype_registry)
 

@@ -8,10 +8,12 @@ TYPE:h
 
 <INC>
 ---START
+
 /**
  * <FILE>
  * File: <FILENAME>
- * Auth: <USERNAME> <EMAIL>
+ * Auth: <USERNAME> 	<<EMAIL>>
  * Date: <DATE>
  */
+
 ---END
