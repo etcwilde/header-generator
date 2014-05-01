@@ -25,9 +25,12 @@ class fileProperty:
 		"""Creates a new file property"""
 		self.__filepath = ""
 		self.__filecreatetime = None
-
 		self.__filepath = os.path.abspath(filepath)
-		self.__filecreatetime = time.strftime("%b %d %Y", time.gmtime(os.path.getctime(filepath)))
+		try:
+			self.__filecreatetime = time.strftime("%b %d %Y", time.gmtime(os.path.getctime(filepath)))
+		except Exception:
+			pass
+
 
 	def __eq__(self, other):
 		"""
@@ -46,7 +49,7 @@ class fileProperty:
 		f = self.open()
 		if f:
 			for line in f:
-				yield str.strip(line)
+				yield line.strip('\n\r')
 			f.close()
 		else:
 			return ""
@@ -65,7 +68,7 @@ class fileProperty:
 		"""Returns an opened file"""
 		try:
 			return open(self.__filepath, mode, buffering, encoding, errors, newline, closefd, opener)
-		except Exception:
+		except FileNotFoundError:
 			print ("Could not open file: %s" % self.__filepath)
 			return None
 

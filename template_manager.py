@@ -53,6 +53,8 @@ class Template:
 		self.type_associations = []
 		self.template_file = files.fileProperty(template_filename)
 
+
+
 		self.template_string = ""
 
 		self.include_pos = False # if include position is false, include statements come after the header
@@ -100,6 +102,7 @@ class Template:
 		done_template = False
 		
 		line_number = 0
+
 		for line in self.template_file:
 			line_number += 1
 			
@@ -212,9 +215,13 @@ class Template_manager:
 		"""
 		Reads the template metadata
 		"""
+		# print ("DEBUG > getting template metadata")
 		t = Template(self.__template_location + "/" + template_filename)
 		if t.get_file().exists():
 			self.__registered_templates.append(t)
+
+			# print ("DEBUG > getting template metadata")
+
 			for line in t.get_file():
 				file_ext = Template_Type_pattern.match(line)
 				if file_ext:
@@ -238,8 +245,10 @@ class Template_manager:
 		but not removed from the database
 		"""
 		directory_templates = []
+		#print("DEBUG > ", self.__template_location)
 		dir_files = list_dir_visible(self.__template_location)
 		for fname in dir_files:
+
 			directory_templates.append(Template(self.__template_location + "/" + fname))
 		return list(set(self.get_registered_templates()) - set(directory_templates))
 
@@ -310,10 +319,18 @@ class Template_manager:
 		Loads the contents of the registry into the class members
 		"""
 		registry_location = self.__template_location + "/.file_types.db"
-		contains_registry = ".file_types.db" in os.listdir(self.__template_location)
+		try:
+			contains_registry = ".file_types.db" in os.listdir(self.__template_location)
+			#print ("DEBUG > Registry exists:", contains_registry)
+		except FileNotFoundError:
+			print ("Error: Template Folder Not Found")
+			exit()
+
 		if not contains_registry:
+			#print ("DEBUG > Create Registry")
 			self.create_registry_file()
 		else: # Don't update the registry here, instead we will run the updates when a template is not in our database
+			#print ("DEBUG > Load Registry")
 			registry_contents = pickle.load(open(registry_location, "rb"))
 			self.__registered_templates = registry_contents[0]
 			self.__filetype_registry = registry_contents[1]

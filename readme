@@ -13,11 +13,11 @@ so it can support any language.
 
 === Program Usage ===
 
-usage: license.py [-h] [-u USERNAME] [-e EMAIL] [-v] [--version] files [files ...]
+usage: license.py [-h] [-u USERNAME] [-e EMAIL] [-t TEMPLATE_DIR] [--version] files [files ...]
 	-h: Help
 	-u: Specify a username for the copyright. This will require an email be passed as well.
 	-e: Specify an email address for the user
-	-v, --verbose: Outputs verbosely
+	-t: Specify a directory containing the template files.
 	--version: prints the version of the program
 
 	files: The list of files that need to have a header appended to them.

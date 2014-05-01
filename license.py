@@ -1,9 +1,5 @@
 #!/usr/bin/python3
 
-"""@package docstring
-Documentation for Header Generator
-"""
-
 #######################################################################################
 # license
 #
@@ -19,9 +15,11 @@ Documentation for Header Generator
 
 import argparse
 import fileinput
+import files
 import os
 import re
 import random
+import signal
 import string
 import sys
 import time
@@ -33,7 +31,7 @@ import template_manager
 
 
 # String pattern
-input_pattern = "Username:(.*)email:(.*)"
+input_pattern = "username:(.*)email:(.*)"
 input_pattern = re.compile(input_pattern)
 email_pattern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
 email_pattern = re.compile(email_pattern)
@@ -61,112 +59,215 @@ def chunks (l, n):
 		n = 1
 	return [l[i:i+n] for i in range (0, len(l), n)]
 
+def get_username(args_list):
+	'''Collect Username from user'''
+	print(args_list)
+	try:
+		if not args_list['username']:
+			return input("Your name:")
+		else:
+			return args_list['username']
+	except KeyError:
+		return input("Your name:")
+
+def get_email(args_list):
+	'''Collect Valid email from user'''
+	try:
+		if (not args_list['email']):
+			valid = False
+			while not valid:
+				myemail = input("Your Email:")
+				if (email_pattern.match(myemail)):
+					valid = True
+		else:
+			valid = False
+			myemail = args_list['email']
+			if (email_pattern.match(myemail)):
+				valid = True
+			while not valid:
+				myemail = input("Your Email:")
+		return myemail
+
+	except KeyError: #Should we not have an email get a valid one
+		valid = False
+		while not valid:
+			myemail = input("your Email:")
+			if (email_pattern.match(myemail)):
+				valid = True
+		return myemail
+
+def create_config(arg_list):
+	username = get_username(arg_list)
+	email = get_email(arg_list)
+	template_location = arg_list['templates']
+	f = open("./.license.config", mode = "w")
+	#print ("DEBUG > WRITE OUT:", "username:" + username + "email:" + email + "\n" + template_location)
+	f.write("username:" + username + "email:" + email + "\n" + template_location)
+	f.close()
+	return (username, email, template_location)
+
+def read_config(fileProperty):
+	f = open(fileProperty.get_filepath(), "r")
+	if f:
+		(username, email) = input_pattern.match(f.readline().strip()).groups()
+		templates = f.readline().strip()
+		if templates == "":
+			templates = "templates/"
+		f.close()
+		return (username, email, templates)
+	else:
+		print ("Error: Config File was removed\nRe-run the program to try again.")
+		exit()
+
+
+
+
 def main():
-	args = argparse.ArgumentParser(description = "Add headers to source files.")
-	args.add_argument('files', nargs ="+", help = "List of files to add headers to.")
-	args.add_argument('-u', '--username', help = "Specify a username to set copyright to. Requires an email be passed as well.")
+	args = argparse.ArgumentParser(description = "Add headerings to source files.")
+	args.add_argument('files', nargs ="+", help = "List of files to add headerings to.")
+	args.add_argument('-u', '--username', help = "Specify a username to place in the headings.")
 	args.add_argument('-e', '--email', help = "Specify an email address for the user.")
-	args.add_argument('-v', '--verbose',action = "store_true", help = "Outputs verbosely.")
-	args.add_argument('--version', action = "version", version = "%(prog)s 0.1")
+	args.add_argument('-t', '--templates', help = "Specify the directory containing the templates.")
+	args.add_argument('--version', action = "version", version = "%(prog)s 1.1")
 	args = vars(args.parse_args())
 	
-	username = ""
-	email = ""
+	license_file = files.fileProperty("./.license.config")
+	
+	# Handle The config file first
+	#No config file or user gave an email, we need to re-write  
 
-	# Should load this in either from the config file or from the args
-	templates = template_manager.Template_manager("./templates")
+	file_exist = False
+	if not license_file.exists():
+		print("No Config File")
+		(username, email, templates) = create_config(args)
 
-	# If there isn't a configuration file, try scraping it off the arguments
-	try:
-		config_file = open ("./.license.config", mode = 'r')
-		filecontents = str(config_file.read())
-		(username, email) = input_pattern.match(filecontents).groups()
+	else:
+		# Just read from the file
+		print("Config File Found")
+		file_exist = True
+		(usernameT, emailT, templatesT) = read_config(license_file)
 
-		done = False
-		replace_string = ""
-		rewrite_flag = False
+		print (usernameT, emailT, templatesT)
 
-		user_selection = "n"
-		if (args['username'] and str(username) != str(args['username'])):
-			replace_string += "Username:"
-			print ("Original username: ", username, "\nNew username:      ", args['username'])
-			while (not done):
-				user_selection = input ("Would you like to replace the current username?y/n:")
-				if (user_selection is "y"):
-					replace_string += args['username']
-					username = args['username']
-					done = True
-					rewrite_flag = True
-				elif (user_selection is not "n"):
-					print ("Please type y for yes, n for no.")
-				else:
-					done = True
+		# Check that arguments are consistent with config contents
+		updated_args = {}
+		update_file = False
+		keep_email = True
+		keep_username = True
+		keep_template = True
+		# Check the username replacement
+		if args['username'] and str(usernameT) != str(args['username']):
+			user_selection = input("Would you like to replace username {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(usernameT, args['username']))
+			if user_selection is "y":
+				# When they want to replace 
+				update_file = True
+				keep_username = False
+
+				username = args['username'] # Use passed username
+				updated_args['username'] = args['username'] # Save passes username
+
+				#print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+
+			elif user_selection is "c":
+				# When they want to run for current
+
+				username = args['username'] # Use passed username
+				updated_args['username'] = usernameT # Save original username
+
+				#print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
+
+			else:
+				# When they don't want to change anything
+				username = usernameT #Use file username
+				updated_args['username'] = usernameT # Save original username
+
+				#print("DEBUG > UPDATED ARGS: ", updated_args)
 		else:
-			replace_string += "Username:"
-			replace_string += username
+			username = usernameT
+			updated_args['username'] = username
 
-		done = False
-		user_selection = "n"
-		if (args['email'] and str(email) != str(args['email'])):
-			replace_string += "email:"
-			print ("Original email: ", email, "\nNew email:      ", args['email'])
-			while (not done):
-				user_selection = input ("Would you like to replace the current email?y/n:")
-				if (user_selection is "y"):
-					replace_string += args['email']
-					email = args['email']
-					done = True
-					rewrite_flag = True
-				elif (user_selection is not "n"):
-					print ("Please type y for yes, n for no.")
-				else:
-					done = True
+		# Check the email replacement
+		if args['email'] and str(emailT) != str(args['email']):
+			user_selection = input("Would you like to replace email {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(emailT, args['email']))
+			if user_selection is "y":
+				# When they want to replace 
+				update_file = True
+				keep_email = False
+
+				email = args['email'] # Use passed email
+				updated_args['email'] = args['email'] # Save passes email
+
+				#print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+
+			elif user_selection is "c":
+				# When they want to run for current
+				email = args['email'] # Use passed email
+				updated_args['email'] = emailT # Save original email
+
+				#print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
+
+			else:
+				# When they don't want to change anything
+				email = emailT #Use file email
+				updated_args['email'] = emailT # Save original email
+
+				#print("DEBUG > UPDATED ARGS: ", updated_args)
 		else:
-			replace_string += "email:"
-			replace_string += email
+			email = emailT
+			updated_args['email'] = email
 
-		config_file.close()
-		if (rewrite_flag):
-			config_file = open("./.license.config", mode = 'w')
-			config_file.write(replace_string)
-	except Exception:
-		config_file = open("./.license.config", mode = 'w')
-		if (not args['username']):
-			username = input("Your Name:")
+		# Check the template replacement
+		if args['templates'] and str(templatesT) != str(args['templates']):
+			user_selection = input("Would you like to replace templates {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(templatesT, args['templates']))
+			if user_selection is "y":
+				# When they want to replace 
+				update_file = True
+				keep_templates = False
+
+				templates = args['templates'] # Use passed templates
+				updated_args['templates'] = args['templates'] # Save passes templates
+
+				#print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+
+			elif user_selection is "c":
+				# When they want to run for current
+				templates = args['templates'] # Use passed templates
+				updated_args['templates'] = templatesT # Save original templates
+
+				#print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
+
+			else:
+				# When they don't want to change anything
+				templates = templatesT #Use file templates
+				updated_args['templates'] = templatesT # Save original templates
+
+				#print("DEBUG > UPDATED ARGS: ", updated_args)
 		else:
-			username = args['username']
-		if (not args['email']):
-			valid = False
-			while (not valid):
-				email = input("Your Email:")
-				if (email_pattern.match(email)):
-					valid = True	
-		else:
-			valid = False
-			email = args['email']
-			if (email_pattern.match(email)):
-					valid = True
-			while not valid:
-				email = input("Your Email:")
-				if (email_pattern.match(email)):
-					valid = True
-		user_data = "Username:" +  username + "email:" + email
-		config_file.write(user_data)
-
-	if (username and not email):
-		print(FAIL + "Email not provided" + END)
-		exit()
-	#print ("User:", username, "\t\t<" + email + ">")
+			templates = templatesT
+			updated_args['templates'] = templates
 
 
+
+		if update_file:
+			(usernameT, emailT, templatesT) = create_config(updated_args)
+			if not keep_username:
+				username = usernameT
+			if not keep_email:
+				email = emailT
+			if not keep_template:
+				templates = templatesT
+
+
+	templates = template_manager.Template_manager(templates)
 
 	file_list = list(set(args['files'])) #The list of non-duplicate files
 	for src_file in file_list:
 		heading = header.header(username, email, src_file)
 		template = templates.search_templates(heading.get_extension())
+		#print ("DEBUG > ext: {0} template: {1}".format(heading.get_extension(), template))
 		head = template.generate_header(heading)
 		
-		filename = src_file
+	# 	filename = src_file
 
 		# Make the backup hidden
 		tmp_name = "."

@@ -4,10 +4,11 @@ TYPE:java
 INCTYPE:import
 
 ---START
-/* <FILENAME>
+/*---------------------------   
+ * <FILENAME>
  * File: <FILE>
  * Auth: <USERNAME> <EMAIL>
  * Date: <DATE>
- */
+ *--------------------------*/
 ---END
 <INC>
