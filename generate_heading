@@ -61,7 +61,7 @@ def chunks (l, n):
 
 def get_username(args_list):
 	'''Collect Username from user'''
-	print(args_list)
+	#print(args_list)
 	try:
 		if not args_list['username']:
 			return input("Your name:")
@@ -100,8 +100,10 @@ def create_config(arg_list):
 	username = get_username(arg_list)
 	email = get_email(arg_list)
 	template_location = arg_list['templates']
+
+	if not template_location:
+		template_location = os.path.dirname(__file__) + "/templates"
 	f = open("./.license.config", mode = "w")
-	#print ("DEBUG > WRITE OUT:", "username:" + username + "email:" + email + "\n" + template_location)
 	f.write("username:" + username + "email:" + email + "\n" + template_location)
 	f.close()
 	return (username, email, template_location)
@@ -138,16 +140,16 @@ def main():
 
 	file_exist = False
 	if not license_file.exists():
-		print("No Config File")
+		#print("No Config File")
 		(username, email, templates) = create_config(args)
 
 	else:
 		# Just read from the file
-		print("Config File Found")
+		#print("Config File Found")
 		file_exist = True
 		(usernameT, emailT, templatesT) = read_config(license_file)
 
-		print (usernameT, emailT, templatesT)
+		#print (usernameT, emailT, templatesT)
 
 		# Check that arguments are consistent with config contents
 		updated_args = {}
@@ -256,8 +258,6 @@ def main():
 				email = emailT
 			if not keep_template:
 				templates = templatesT
-
-
 	templates = template_manager.Template_manager(templates)
 
 	file_list = list(set(args['files'])) #The list of non-duplicate files
