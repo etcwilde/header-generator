@@ -1,30 +1,25 @@
 #!/usr/bin/python3
 
-#######################################################################################
+################################################################################
 # license
 #
 # license.py
 # Written by Evan Wilde
 # April 6 2014
-# 
-# This program will place license agreement information at the top of source code files
-# It reads your information from a config file, or requests your information to generate
-# the config file
 #
-#######################################################################################
+# This program will place license agreement information at the top of source
+# code files It reads your information from a config file, or requests your
+# information to generate the config file
+#
+################################################################################
 
 import argparse
-import fileinput
 import files
 import os
 import re
 import random
-import signal
-import string
-import sys
-import time
-import multiprocessing
 import math
+import string
 
 import header
 import template_manager
@@ -44,268 +39,281 @@ DEBUG = '\033[93m'
 FAIL = '\033[91m'
 END = '\033[0m'
 
-# For generating tmp file names
-def random_name_generator(size = 4, chars = string.ascii_uppercase + string.digits):
-	return ''.join(random.choice(chars) for _ in range(size))
 
-# For breaking the incoming list of threads into separate lists for multi-threading.
-def filechunks (files, threads):
-	return [files[i:i+math.ceil(len(files)/threads)] for i in range(0, len(files), math.ceil(len(files)/threads))]  
+# For generating tmp file names
+def random_name_generator(size=4, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
+# For breaking the incoming list of threads into separate lists for
+# multi-threading.
+def filechunks(files, threads):
+    return [files[i:i+math.ceil(len(files)/threads)]
+            for i in range(0, len(files), math.ceil(len(files)/threads))]
+
 
 # Chuncking thing....
 # I don't think this is necessary anymore.
-def chunks (l, n):
-	if n < 1:
-		n = 1
-	return [l[i:i+n] for i in range (0, len(l), n)]
+def chunks(l, n):
+    if n < 1:
+        n = 1
+    return [l[i:i+n] for i in range(0, len(l), n)]
+
 
 def get_username(args_list):
-	'''Collect Username from user'''
-	#print(args_list)
-	try:
-		if not args_list['username']:
-			return input("Your name:")
-		else:
-			return args_list['username']
-	except KeyError:
-		return input("Your name:")
+    '''Collect Username from user'''
+    # print(args_list)
+    try:
+        if not args_list['username']:
+            return input("Your name:")
+        else:
+            return args_list['username']
+    except KeyError:
+        return input("Your name:")
+
 
 def get_email(args_list):
-	'''Collect Valid email from user'''
-	try:
-		if (not args_list['email']):
-			valid = False
-			while not valid:
-				myemail = input("Your Email:")
-				if (email_pattern.match(myemail)):
-					valid = True
-		else:
-			valid = False
-			myemail = args_list['email']
-			if (email_pattern.match(myemail)):
-				valid = True
-			while not valid:
-				myemail = input("Your Email:")
-		return myemail
+    '''Collect Valid email from user'''
+    try:
+        if (not args_list['email']):
+            valid = False
+            while not valid:
+                myemail = input("Your Email:")
+                if (email_pattern.match(myemail)):
+                    valid = True
+        else:
+            valid = False
+            myemail = args_list['email']
+            if (email_pattern.match(myemail)):
+                valid = True
+            while not valid:
+                myemail = input("Your Email:")
+        return myemail
+    except KeyError:
+        valid = False
+        while not valid:
+            myemail = input("your Email:")
+            if (email_pattern.match(myemail)):
+                valid = True
+        return myemail
 
-	except KeyError: #Should we not have an email get a valid one
-		valid = False
-		while not valid:
-			myemail = input("your Email:")
-			if (email_pattern.match(myemail)):
-				valid = True
-		return myemail
 
 def create_config(arg_list):
-	username = get_username(arg_list)
-	email = get_email(arg_list)
-	template_location = arg_list['templates']
+    username = get_username(arg_list)
+    email = get_email(arg_list)
+    template_location = arg_list['templates']
 
-	if not template_location:
-		template_location = os.path.dirname(__file__) + "/templates"
-	f = open("./.license.config", mode = "w")
-	f.write("username:" + username + "email:" + email + "\n" + template_location)
-	f.close()
-	return (username, email, template_location)
+    if not template_location:
+        template_location = os.path.dirname(__file__) + "/templates"
+    f = open("./.license.config", mode="w")
+    f.write("username:" + username + "email:" + email + "\n" +
+            template_location)
+    f.close()
+    return (username, email, template_location)
+
 
 def read_config(fileProperty):
-	f = open(fileProperty.get_filepath(), "r")
-	if f:
-		(username, email) = input_pattern.match(f.readline().strip()).groups()
-		templates = f.readline().strip()
-		if templates == "":
-			templates = "templates/"
-		f.close()
-		return (username, email, templates)
-	else:
-		print ("Error: Config File was removed\nRe-run the program to try again.")
-		exit()
-
-
-
+    f = open(fileProperty.get_filepath(), "r")
+    if f:
+        (username, email) = input_pattern.match(f.readline().strip()).groups()
+        templates = f.readline().strip()
+        if templates == "":
+            templates = "templates/"
+        f.close()
+        return (username, email, templates)
+    else:
+        print ("Error: Config File was removed\nRe-run the program\
+               to try again.")
+        exit()
 
 def main():
-	args = argparse.ArgumentParser(description = "Add headerings to source files.")
-	args.add_argument('files', nargs ="+", help = "List of files to add headerings to.")
-	args.add_argument('-u', '--username', help = "Specify a username to place in the headings.")
-	args.add_argument('-e', '--email', help = "Specify an email address for the user.")
-	args.add_argument('-t', '--templates', help = "Specify the directory containing the templates.")
-	args.add_argument('--version', action = "version", version = "%(prog)s 1.1")
-	args = vars(args.parse_args())
-	
-	license_file = files.fileProperty("./.license.config")
-	
-	# Handle The config file first
-	#No config file or user gave an email, we need to re-write  
+    args = argparse.ArgumentParser(description="Add headings to source files.")
+    args.add_argument('files', nargs="+", help="List of files to add\ headings to.")
+    args.add_argument('-u', '--username', help="Specify a user name to place in the headings.")
+    args.add_argument('-e', '--email', help="Specify an email address for the user.")
+    args.add_argument('-t', '--templates', help="Specify the directory containing the templates.")
+    args.add_argument('--version', action="version", version="%(prog)s 1.1")
+    args = vars(args.parse_args())
 
-	file_exist = False
-	if not license_file.exists():
-		#print("No Config File")
-		(username, email, templates) = create_config(args)
+    license_file = files.fileProperty("./.license.config")
 
-	else:
-		# Just read from the file
-		#print("Config File Found")
-		file_exist = True
-		(usernameT, emailT, templatesT) = read_config(license_file)
+    # Handle The config file first
+    # No config file or user gave an email, we need to re-write
 
-		#print (usernameT, emailT, templatesT)
+    # file_exist = False
+    if not license_file.exists():
+        # print("No Config File")
+        (username, email, templates) = create_config(args)
 
-		# Check that arguments are consistent with config contents
-		updated_args = {}
-		update_file = False
-		keep_email = True
-		keep_username = True
-		keep_template = True
-		# Check the username replacement
-		if args['username'] and str(usernameT) != str(args['username']):
-			user_selection = input("Would you like to replace username {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(usernameT, args['username']))
-			if user_selection is "y":
-				# When they want to replace 
-				update_file = True
-				keep_username = False
+    else:
+        # Just read from the file
+        # print("Config File Found")
+        # file_exist = True
+        (usernameT, emailT, templatesT) = read_config(license_file)
 
-				username = args['username'] # Use passed username
-				updated_args['username'] = args['username'] # Save passes username
+        # print (usernameT, emailT, templatesT)
 
-				#print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+        # Check that arguments are consistent with config contents
+        updated_args = {}
+        update_file = False
+        keep_email = True
+        keep_username = True
+        keep_template = True
+        # Check the username replacement
+        if args['username'] and str(usernameT) != str(args['username']):
+            user_selection = input("Would you like to replace username {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(usernameT, args['username']))
+            if user_selection is "y":
+                # When they want to replace
+                update_file = True
+                keep_username = False
 
-			elif user_selection is "c":
-				# When they want to run for current
+                username = args['username'] # Use passed username
+                updated_args['username'] = args['username'] # Save passes username
 
-				username = args['username'] # Use passed username
-				updated_args['username'] = usernameT # Save original username
+                #print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
 
-				#print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
+            elif user_selection is "c":
+                # When they want to run for current
 
-			else:
-				# When they don't want to change anything
-				username = usernameT #Use file username
-				updated_args['username'] = usernameT # Save original username
+                username = args['username'] # Use passed username
+                updated_args['username'] = usernameT # Save original username
 
-				#print("DEBUG > UPDATED ARGS: ", updated_args)
-		else:
-			username = usernameT
-			updated_args['username'] = username
+                #print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
 
-		# Check the email replacement
-		if args['email'] and str(emailT) != str(args['email']):
-			user_selection = input("Would you like to replace email {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(emailT, args['email']))
-			if user_selection is "y":
-				# When they want to replace 
-				update_file = True
-				keep_email = False
+            else:
+                # When they don't want to change anything
+                username = usernameT #Use file username
+                updated_args['username'] = usernameT # Save original username
 
-				email = args['email'] # Use passed email
-				updated_args['email'] = args['email'] # Save passes email
+                #print("DEBUG > UPDATED ARGS: ", updated_args)
+        else:
+            username = usernameT
+            updated_args['username'] = username
 
-				#print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+        # Check the email replacement
+        if args['email'] and str(emailT) != str(args['email']):
+            user_selection = input("Would you like to replace email {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(emailT, args['email']))
+            if user_selection is "y":
+                # When they want to replace
+                update_file = True
+                keep_email = False
 
-			elif user_selection is "c":
-				# When they want to run for current
-				email = args['email'] # Use passed email
-				updated_args['email'] = emailT # Save original email
+                email = args['email'] # Use passed email
+                updated_args['email'] = args['email'] # Save passes email
 
-				#print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
+                # print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
 
-			else:
-				# When they don't want to change anything
-				email = emailT #Use file email
-				updated_args['email'] = emailT # Save original email
+            elif user_selection is "c":
+                # When they want to run for current
+                email = args['email'] # Use passed email
+                updated_args['email'] = emailT # Save original email
 
-				#print("DEBUG > UPDATED ARGS: ", updated_args)
-		else:
-			email = emailT
-			updated_args['email'] = email
+                # print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
 
-		# Check the template replacement
-		if args['templates'] and str(templatesT) != str(args['templates']):
-			user_selection = input("Would you like to replace templates {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(templatesT, args['templates']))
-			if user_selection is "y":
-				# When they want to replace 
-				update_file = True
-				keep_templates = False
+            else:
+                # When they don't want to change anything
+                email = emailT #Use file email
+                updated_args['email'] = emailT # Save original email
 
-				templates = args['templates'] # Use passed templates
-				updated_args['templates'] = args['templates'] # Save passes templates
+                # print("DEBUG > UPDATED ARGS: ", updated_args)
+        else:
+            email = emailT
+            updated_args['email'] = email
 
-				#print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+        # Check the template replacement
+        if args['templates'] and str(templatesT) != str(args['templates']):
+            user_selection = input("Would you like to replace templates {0} with {1}? y(es)/c(urrent)/n(o) [n]:".format(templatesT, args['templates']))
+            if user_selection is "y":
+                # When they want to replace
+                update_file = True
 
-			elif user_selection is "c":
-				# When they want to run for current
-				templates = args['templates'] # Use passed templates
-				updated_args['templates'] = templatesT # Save original templates
+                templates = args['templates']  # Use passed templates
+                updated_args['templates'] = args['templates']
+                # Save passes templates
 
-				#print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
+                # print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
 
-			else:
-				# When they don't want to change anything
-				templates = templatesT #Use file templates
-				updated_args['templates'] = templatesT # Save original templates
+            elif user_selection is "c":
+                # When they want to run for current
+                templates = args['templates']  # Use passed templates
+                updated_args['templates'] = templatesT
+                # Save original templates
 
-				#print("DEBUG > UPDATED ARGS: ", updated_args)
-		else:
-			templates = templatesT
-			updated_args['templates'] = templates
+                # print("DEBUG > UPDATED ARGS: Current Use ", updated_args)
 
+            else:
+                # When they don't want to change anything
+                templates = templatesT  # Use file templates
+                updated_args['templates'] = templatesT
+                # Save original templates
 
+                # print("DEBUG > UPDATED ARGS: ", updated_args)
+        else:
+            templates = templatesT
+            updated_args['templates'] = templates
 
-		if update_file:
-			(usernameT, emailT, templatesT) = create_config(updated_args)
-			if not keep_username:
-				username = usernameT
-			if not keep_email:
-				email = emailT
-			if not keep_template:
-				templates = templatesT
-	templates = template_manager.Template_manager(templates)
+        if update_file:
+            (usernameT, emailT, templatesT) = create_config(updated_args)
+            if not keep_username:
+                username = usernameT
+            if not keep_email:
+                email = emailT
+            if not keep_template:
+                templates = templatesT
+    templates = template_manager.Template_manager(templates)
 
-	file_list = list(set(args['files'])) #The list of non-duplicate files
-	for src_file in file_list:
-		heading = header.header(username, email, src_file)
-		template = templates.search_templates(heading.get_extension())
-		#print ("DEBUG > ext: {0} template: {1}".format(heading.get_extension(), template))
-		head = template.generate_header(heading)
-		
-	# 	filename = src_file
+    file_list = list(set(args['files']))  # The list of non-duplicate files
+    for src_file in file_list:
+        heading = header.header(username, email, src_file)
+        template = templates.search_templates(heading.get_extension())
+        if not template:
+            templates.update_registry_file()
+            template = templates.search_templates(heading.get_extension())
+            if not template:
+                print ("Error: Template for", heading.get_extension(),
+                       "not found")
+                exit(1)
+        # print ("DEBUG > ext: {0} template:
+        # {1}".format(heading.get_extension(), template))
+        head = template.generate_header(heading)
 
-		# Make the backup hidden
-		tmp_name = "."
-		tmp_name += random_name_generator()
-		tmp_name += ".bak"
+        # filename = src_file
 
-		template_include = template.get_include()
+        # Make the backup hidden
+        tmp_name = "."
+        tmp_name += random_name_generator()
+        tmp_name += ".bak"
 
-		header_written = False
-		with open(src_file, 'r') as s:
-			with open(tmp_name, 'w') as d:
-				if not template.is_include_top():
-					d.write(head)
-					header_written = True
-					for line in s:
-						d.write(line)
-				else:
-					for line in s:
-						if template_include in line or line is string.whitespace:
-							pass
-						elif not header_written:
-							d.write(head)
-							header_written = True
-						d.write(line)
+        template_include = template.get_include()
 
-		#Put the file back where it goes
-		os.rename(tmp_name, src_file)
+        header_written = False
+        with open(src_file, 'r') as s:
+            with open(tmp_name, 'w') as d:
+                if not template.is_include_top():
+                    d.write(head)
+                    header_written = True
+                    for line in s:
+                        d.write(line)
+                else:
+                    for line in s:
+                        if (template_include in line) or (line is
+                                                          string.whitespace):
+                            pass
+                        elif not header_written:
+                            d.write(head)
+                            header_written = True
+                        d.write(line)
 
+        # Put the file back where it goes
+        os.rename(tmp_name, src_file)
+    # Disabled until threading figured out
+    # max_threads = multiprocessing.cpu_count()
+    # file_list = filechunks(args['files'], max_threads)
 
-	# Disabled until threading figured out
-	#max_threads = multiprocessing.cpu_count()
-	#file_list = filechunks(args['files'], max_threads)
-
-	#print(file_list)
-	#print("Chunks: {0}, Chunk Size: {2} files: {1}".format(len(file_list), len(args['files']), len(file_list[0])) )
+    # print(file_list)
+    # print("Chunks: {0}, Chunk Size: {2} files: {1}".format(len(file_list),
+    # len(args['files']), len(file_list[0])) )
 
 
 if __name__ == '__main__':
-	main()
-
-
+    main()
