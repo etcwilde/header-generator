@@ -5,7 +5,7 @@
 # Written by Evan Wilde
 # April 8 2014
 #
-# Gives a simple interface for getting properties on a file 
+# Gives a simple interface for getting properties on a file
 #######################################################################################
 
 import re
@@ -15,7 +15,7 @@ import time
 # File Property
 #
 # An object capable of returning contents of a file
-# 
+#
 class fileProperty:
 	"""docstring for fileProperty"""
 
@@ -27,7 +27,7 @@ class fileProperty:
 		self.__filecreatetime = None
 		self.__filepath = os.path.abspath(filepath)
 		try:
-			self.__filecreatetime = time.strftime("%b %d %Y", time.gmtime(os.path.getctime(filepath)))
+			self.__filecreatetime = time.strftime("%b %d %Y", time.localtime(os.path.getctime(filepath)))
 		except Exception:
 			pass
 
@@ -132,4 +132,4 @@ class fileProperty:
 		"""A pretty representation of the file data"""
 		return str(self.get_file())
 
-		
+
