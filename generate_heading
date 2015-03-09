@@ -112,11 +112,11 @@ def create_config(arg_list):
     return (username, email, template_location)
 
 
-def read_config(fileProperty):
+def read_config(fileProperty, current_directory):
     f = open(fileProperty.get_filepath(), "r")
     if f:
         (username, email) = input_pattern.match(f.readline().strip()).groups()
-        templates = f.readline().strip()
+        templates = current_directory + f.readline().strip()
         if templates == "":
             templates = "templates/"
         f.close()
@@ -125,6 +125,15 @@ def read_config(fileProperty):
         print ("Error: Config File was removed\nRe-run the program\
                to try again.")
         exit()
+
+
+def is_root(directory):
+    path = os.path.abspath(directory)
+    if path == "/":
+        return True
+    else:
+        return False
+
 
 def main():
     args = argparse.ArgumentParser(description="Add headings to source files.")
@@ -135,7 +144,21 @@ def main():
     args.add_argument('--version', action="version", version="%(prog)s 1.1")
     args = vars(args.parse_args())
 
-    license_file = files.fileProperty("./.license.config")
+    filename = ".license.config"
+    directory = "./"
+
+    license_file = files.fileProperty(directory + filename)
+    while not license_file.exists() and not is_root(directory):
+        directory += "../"
+        license_file = files.fileProperty(directory + filename)
+
+
+
+    # license_file = files.fileProperty("./.license.config")
+
+    # while not license_file.exists():
+    #     license_file
+
 
     # Handle The config file first
     # No config file or user gave an email, we need to re-write
@@ -149,7 +172,7 @@ def main():
         # Just read from the file
         # print("Config File Found")
         # file_exist = True
-        (usernameT, emailT, templatesT) = read_config(license_file)
+        (usernameT, emailT, templatesT) = read_config(license_file, directory)
 
         # print (usernameT, emailT, templatesT)
 
@@ -170,7 +193,7 @@ def main():
                 username = args['username'] # Use passed username
                 updated_args['username'] = args['username'] # Save passes username
 
-                #print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
+                # print("DEBUG > UPDATED ARGS: Replacement ", updated_args)
 
             elif user_selection is "c":
                 # When they want to run for current
